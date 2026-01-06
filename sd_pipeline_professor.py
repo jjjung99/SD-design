@@ -44,14 +44,25 @@ def make_O_ASD(sd_dna):
 # SD & Spacer generation
 
 def generate_SD_list():
-    bases = ["A","T","C","G"]
-    out = []
-    for tup in product(bases, repeat=6):
-        sd = "".join(tup)
-        gc = sum(1 for c in sd if c in ("G","C"))
-        if 2 <= gc <= 4:
-            out.append(sd)
-    return out
+    from itertools import combinations, product
+    SDs = []
+    positions = range(6)
+
+    for gc_count in [2, 3, 4]:
+        for gc_pos in combinations(positions, gc_count):
+
+            letter_sets = []
+            for i in positions:
+                if i in gc_pos:
+                    letter_sets.append(["G", "C"])
+                else:
+                    letter_sets.append(["A", "T"])
+
+            for tup in product(*letter_sets):
+                SDs.append("".join(tup))
+
+    return SDs
+
 
 def generate_spacer_list():
     return ["".join(p) for p in product(["A","T"], repeat=6)]
@@ -77,15 +88,19 @@ def evaluate_UTR20(args):
     dg2 = duplex_dG(osd_rna, wt_asd_core_rna)       # WT-ASD core vs SD
     dg3 = duplex_dG(wt_sd_rna, oasd_core_rna)       # WT-SD vs O-ASD core
 
+    strong_ok = (-10 <= dg1 <= -8.5)
+    ortho_ok = (dg2 >= 0 and dg3 >= 0)
 
     return {
+        "UTR20": UPSTREAM + sd + sp,
         "SD": sd,
         "Spacer": sp,
-        "UTR20": UPSTREAM + sd + sp,
         "O_ASD": o_asd,
         "dg_O_SD__O_ASD": dg1,
         "dg_WT_ASDcore__O_SD": dg2,
-        "dg_WT_SD__O_ASDcore": dg3
+        "dg_WT_SD__O_ASDcore": dg3,
+        "strong_ok": int(strong_ok),
+        "ortho_ok": int(ortho_ok)
     }
 
 
